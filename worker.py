@@ -1,11 +1,10 @@
 import hashlib
 import time
-import redis
 
 SLEEP_TIME = 3
-
-TASKS_QUEUE = 'work_tasks'
-COMPLETED_TASKS_QUEUE = 'completed_tasks'
+MAX_TIME_BETWEEN_TASKS = 120
+MAIN_NODE = None
+SECOND_NODE = None
 
 
 def do_work(buffer, iterations):
@@ -15,34 +14,48 @@ def do_work(buffer, iterations):
     return output
 
 
-# get redis cerdentials from config sys package
-# Initialize Redis connection
-redis_credentials = {
-    'host': 'localhost',
-    'port': 6379,
-    'db': 0,
-    'password': 'your_password',
-    'decode_responses': True
-}
+last_task_time = datetime.now()
+task_nodes = get_task_nodes()
 
-# Inialize redis connection from queue cerdentials => redis_connection
-redis_connection = redis.Redis(**redis_credentials)
+while datetime.now() - last_task_time <= MAX_TIME_BETWEEN_TASKS:
+    for node in task_nodes:
+        task = get_task(node)  # Get task from the task node
+        if(task is not None):
+            result = do_work(task["buffer"], task["iterations"])
+            add_completed_work(node, task["work_id"], result)
+            last_task_time = datetime.now()
+            continue
 
-while True:
+    time.sleep(SLEEP_TIME)
 
-    # Dequeue work task from the working queue from redis connection
-    work_unit = redis_connection.lpop(TASKS_QUEUE)
+terminated()
 
-    if work_unit is not None and work_unit['status'] == 'pending':
-        result = do_work(work_unit['buffer'], work_unit['iterations'])
-        print(f"result is: {result}")
+def get_task_nodes():
+    nodes = [MAIN_NODE]
+    if SECOND_NODE is not None:
+        nodes.append(SECOND_NODE)
 
-        # push result into completed queue.
-        # Enequeue work completed task to the completed task.
-        redis_connection.rpush(COMPLETED_TASKS_QUEUE, {'work_id': work_unit['work_id'], 'result': result})
+    return nodes
 
+def get_task(node):
+    response = requests.get(f"http://{node}/get_task")
+    if response.status_code == 200:
+        return response.json()
     else:
-        time.sleep(SLEEP_TIME)
+        print(f"Failed to retrieve task from {node}.")
+        return None
+
+
+def terminated():
+    # Notify the nodes about termination
+    requests.post(f"http://{MAIN_NODE}/worker_down")
+
+    # Terminate the EC2 instances
+    ec2 = boto3.client("ec2", region_name="your_region")
+    instance_ids = ["instance_id_1", "instance_id_2", ...]  # Replace with your instance IDs
+    ec2.terminate_instances(InstanceIds=instance_ids)
+
+
 
 
 
