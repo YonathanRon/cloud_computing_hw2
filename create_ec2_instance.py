@@ -3,7 +3,7 @@ import time
 
 IMAGE_ID = 'ami-00aa9d3df94c6c354'
 INSTANCE_TYPE = 't2.micro'
-SETUP_FILE = 'setup.sh'
+SETUP_FILE = 'node_server_setup.sh'
 # Create an EC2 client
 
 ec2_client = boto3.client('ec2')
