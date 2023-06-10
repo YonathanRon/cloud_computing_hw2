@@ -36,10 +36,17 @@ class WorkerController:
         def read_health():
             return {"status": "ok"}
 
-        @self.app.post("/add_sibling/{other_node}")
+
+        @self.app.put("/add_sibling/{other_node}")
         async def add_sibling(other_node: str):
             self.other_node_ip = other_node
             print(f"Adding sibling ip {other_node}")
+
+        @self.app.put("/max_workers/{max_workers}")
+        async def add_sibling(max_workers: str):
+            self.MAX_NUM_OF_WORKERS = max_workers
+            print(f"set maximum number of workers to {max_workers}")
+
 
         @self.app.post("/worker_down")
         async def worker_down():
