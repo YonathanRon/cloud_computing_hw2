@@ -1,5 +1,6 @@
 #!/bin/bash
 # Clone your application from Git
+cd /home/ubuntu
 git clone https://github.com/YonathanRon/cloud_computing_hw2.git
 
 sudo apt-get update -y
