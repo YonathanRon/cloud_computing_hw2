@@ -4,7 +4,7 @@ import boto3
 import json
 from botocore.exceptions import ClientError
 
-POLICY_DOCUMENT = json.dumps( {
+POLICY_DOCUMENT = json.dumps({
     "Version": "2012-10-17",
     "Statement": [
         {
@@ -12,14 +12,12 @@ POLICY_DOCUMENT = json.dumps( {
             "Action": [
                 "ec2:DescribeInstances",
                 "ec2:StartInstances",
-                "ec2:StopInstances"
-            ],
-            "Resource": "arn:aws:ec2:*:*:instance/*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:RunInstances"
+                "ec2:StopInstances",
+                "ec2:RunInstances",
+                "ec2:DescribeSecurityGroups",  # Added permission for describing security groups
+                "ec2:CreateSecurityGroup",  # Added permission for creating security groups
+                "ec2:AuthorizeSecurityGroupIngress",  # Added permission for authorizing ingress rules
+                "ec2:RevokeSecurityGroupIngress"  # Added permission for revoking ingress rules
             ],
             "Resource": "*"
         }

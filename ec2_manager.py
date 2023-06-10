@@ -9,9 +9,9 @@ class EC2Manager:
     KEY_NAME = 'WorkerManagerNode'
     SECURITY_GROUP_NAME = 'HW2_sg'
 
-    def __init__(self, role_name = ''):
-        self.ec2_client = boto3.client('ec2')
-        self.ec2_resource = boto3.resource('ec2')
+    def __init__(self, role_name='', region=os.environ.get("AWS_DEFAULT_REGION", 'eu-west-1')):
+        self.ec2_client = boto3.client('ec2', region_name=region)
+        self.ec2_resource = boto3.resource('ec2', region_name=region)
         self.role_name = role_name
         self.security_group_id = None
         self.key_pair_exists = None
