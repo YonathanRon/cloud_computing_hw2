@@ -1,125 +1,148 @@
-from fastapi import FastAPI, Body, status
-from fastapi.responses import JSONResponse
-import hashlib
+import os
 import uuid
-import uvicorn
+import datetime
+import requests
 import queue
 
-from pip._internal.cli.cmdoptions import timeout
-
-WORK_QUEUE = queue.Queue()
-COMPLETED_QUEUE = queue.Queue()
-MAX_NUM_OF_WORKERS = 0
-NUM_OF_WORKERS = 0
-MAX_TASK_TIME_TO_UPLOAD_WORKER = 15 #SEC
-
-OTHER_NODE = None
-
-app = FastAPI()
-
-@app.get("/")
-def read_root():
-    return {"Welcome to Workers Controller"}
+import uvicorn
+from fastapi import FastAPI, Body, status
+from fastapi.responses import JSONResponse
 
 
-@app.put("/enqueue/{iterations}")
-async def enqueue_work(iterations: int, buffer: str = Body(...)) -> JSONResponse:
-    # Generate a unique ID for the work item
-    work_id = str(uuid.uuid4())
+class WorkerController:
+    MAX_NUM_OF_WORKERS = int(os.environ.get("MAX_NUM_OF_WORKERS", 5))
+    MAX_TASK_TIME_TO_UPLOAD_WORKER = 15
 
-    WORK_QUEUE.put({'work_id': work_id, 'iterations': iterations, 'buffer': buffer, "insert_time": datetime.now()})
+    def __init__(self):
+        self.work_queue = queue.Queue()
+        self.completed_work = queue.Queue()
+        self.active_workers = 0
+        self.other_node_ip = None
+        self.app = FastAPI()
 
-    check_if_need_more_workers()
+        @self.app.get("/")
+        def read_root():
+            return {"Welcome to Workers Controller"}
 
-    # Return the ID of the submitted work item
-    return JSONResponse(content={"work_id": work_id})
+        @self.app.put("/enqueue/{iterations}")
+        async def enqueue_work(iterations: int, buffer: str = Body(...)) -> JSONResponse:
+            return self.enqueue_work(iterations, buffer)
 
+        @self.app.post("/pullCompleted/{top}")
+        async def pull_completed_work(top: int) -> JSONResponse:
+            return self.pull_completed_work(top)
 
-@app.post("/pullCompleted/{top}")
-async def pull_completed_work(top: int) -> JSONResponse:
-    completed_works = []
+        @self.app.post("/add_sibling/{other_node}")
+        async def add_sibiling(other_node: str):
+            self.other_node_ip = other_node
 
-    while len(completed_works) < top and (not COMPLETED_QUEUE.empty() or try_approch_other_node("exists_completed_works")):
-        if(not COMPLETED_QUEUE.empty()):
-            completed_task = COMPLETED_QUEUE.get_nowait()
-        else:
-            completed_task = try_approch_other_node("get_completed_work_or_none")
+        @self.app.post("/worker_down")
+        async def worker_down():
+            self.active_workers -= 1
 
-        if completed_task is None:
-            break
+        @self.app.get("/try_get_node_quota")
+        def try_get_node_quota():
+            return self.try_get_node_quota()
 
-        completed_works.append(completed_task)
+        @self.app.post("/add_completed_work")
+        async def add_completed_work(work_id: str = Body(...), result: str = Body(...)):
+            self.completed_work.put({'work_id': work_id, 'result': result})
 
-    # Return the completed work items
-    return JSONResponse(content=completed_works)
+        @self.app.get("/exists_completed_works")
+        async def exists_completed_works():
+            return self.exists_completed_works()
 
-def check_if_need_more_workers():
-    if NUM_OF_WORKERS < 1:
-        start_new_worker() ## TODO: IMPLEMENT
-        NUM_OF_WORKERS += 1
+        @self.app.get("/get_completed_work_or_none")
+        async def get_completed_work_or_none():
+            return self.get_completed_work_or_none()
 
-    if NUM_OF_WORKERS < MAX_NUM_OF_WORKERS:
-        if WORK_QUEUE.empty() and datetime.now() - WORK_QUEUE.queue[0]["insert_time"] > MAX_TASK_TIME_TO_UPLOAD_WORKER:
-            start_new_worker()  ## TODO: IMPLEMENT
-            NUM_OF_WORKERS += 1
-    else:
-        if try_approch_other_node("try_get_node_quota"):
-            MAX_NUM_OF_WORKERS += 1
+        @self.app.get("/get_task")
+        def get_task():
+            return self.get_task()
 
+    def enqueue_work(self, iterations, buffer):
+        work_id = str(uuid.uuid4())
 
-@app.post("/add_sibiling/{other_node}")
-async def add_sibiling(other_node: str):
-    OTHER_NODE = other_node
+        self.work_queue.put(
+            {'work_id': work_id, 'iterations': iterations, 'buffer': buffer, "insert_time": datetime.datetime.now()})
 
+        self.check_if_need_more_workers()
 
-@app.post("/worker_down")
-async def worker_down():
-    NUM_OF_WORKERS -= 1
+        return JSONResponse(content={"work_id": work_id})
 
-@app.get("/try_get_node_quota")
-def try_get_node_quota():
-    if NUM_OF_WORKERS < MAX_NUM_OF_WORKERS:
-        MAX_NUM_OF_WORKERS -= 1
-        return True
-    return False
+    def check_if_need_more_workers(self):
+        if not self.active_workers:
+            # start_new_worker() ## TODO: IMPLEMENT
+            self.active_workers += 1
+        # Check if we have work that is waiting more than 15 sec (MAX_TASK_TIME_TO_UPLOAD_WORKER)
+        if not self.work_queue.empty() and \
+                datetime.datetime.now() - self.work_queue.queue[0][
+            "insert_time"] >= self.MAX_TASK_TIME_TO_UPLOAD_WORKER:
+            # if this server has available resource, start use it
+            if self.active_workers < self.MAX_NUM_OF_WORKERS:
+                self.active_workers += 1
+            # If this server has no available resource, ask from second server
+            else:
+                if self.try_approch_other_node("try_get_node_quota"):
+                    self.MAX_NUM_OF_WORKERS += 1
+            # start_new_worker()  ## TODO: IMPLEMENT
 
-@app.post("/add_complteted_work")
-async def add_complteted_work(work_id: str = Body(...), result: str = Body(...)):
-    COMPLETED_QUEUE.put({'work_id': work_id, 'result': result})
+    # ...
+    def get_completed_work_or_none(self):
+        result = None
 
-@app.get("/exists_completed_works")
-async def exists_completed_works():
-    response = status.HTTP_500_INTERNAL_SERVER_ERROR
+        if not self.completed_work.empty():
+            result = self.completed_work.get()
 
-    if not COMPLETED_QUEUE.empty():
-        response = status.HTTP_200_OK
+        return result
 
-    return response
+    def get_task(self):
+        result = None
 
+        if not self.work_queue.empty():
+            result = self.work_queue.get()
 
-@app.get("/get_completed_worke_or_none")
-async def get_completed_work_or_none():
-    result = None
+        return result
 
-    if not COMPLETED_QUEUE.empty():
-        result = COMPLETED_QUEUE.get()
+    def try_approch_other_node(self, endpoint: str):
+        if self.other_node_ip is not None:
+            response = requests.get(f"http://{self.other_node_ip}/{endpoint}", timeout=5)
+            return response.status_code == 200
+        return False
 
-    return result
+    def exists_completed_works(self):
+        response = status.HTTP_500_INTERNAL_SERVER_ERROR
 
-@app.get("/get_task")
-def get_task():
-    result = None
+        if not self.completed_work.empty():
+            response = status.HTTP_200_OK
 
-    if not WORK_QUEUE.empty():
-        result = WORK_QUEUE.get()
+        return response
 
-    return result
+    def try_get_node_quota(self):
+        if self.active_workers < self.MAX_NUM_OF_WORKERS:
+            self.MAX_NUM_OF_WORKERS -= 1
+            return True
+        return False
 
-def try_approch_other_node(endpoint: str):
-    if OTHER_NODE is not None :
-        response = requests.get(f"http://{OTHER_NODE}/{endpoint}", timeout=5)
-        return response.status_code == 200
-    return False
+    def pull_completed_work(self, top):
+        completed_works = []
+
+        while len(completed_works) < top and (
+                not self.completed_work.empty() or self.try_approch_other_node("exists_completed_works")):
+            if not self.completed_work.empty():
+                completed_task = self.completed_work.get_nowait()
+            else:
+                completed_task = self.try_approch_other_node("get_completed_work_or_none")
+
+            if completed_task is None:
+                break
+
+            completed_works.append(completed_task)
+
+        # Return the completed work items
+        return JSONResponse(content=completed_works)
+
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8001)
+    worker_controller = WorkerController()
+    uvicorn.run(worker_controller.app, host="127.0.0.1", port=8001)
