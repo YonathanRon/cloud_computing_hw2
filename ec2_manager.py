@@ -102,7 +102,7 @@ class EC2Manager:
 
     def adjust_security_inbound(self):
         security_group_id = self.get_or_create_security_group()
-        desired_ports = [8000, 22]
+        desired_ports = [8001, 22]
         try:
             response = self.ec2_client.describe_security_groups(GroupIds=[security_group_id])
             existing_rules = response['SecurityGroups'][0]['IpPermissions']

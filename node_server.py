@@ -32,9 +32,14 @@ class WorkerController:
         async def pull_completed_work(top: int) -> JSONResponse:
             return self.pull_completed_work(top)
 
+        @self.app.get("/health")
+        def read_health():
+            return {"status": "ok"}
+
         @self.app.post("/add_sibling/{other_node}")
-        async def add_sibiling(other_node: str):
+        async def add_sibling(other_node: str):
             self.other_node_ip = other_node
+            print(f"Adding sibling ip {other_node}")
 
         @self.app.post("/worker_down")
         async def worker_down():
