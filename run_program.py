@@ -1,4 +1,3 @@
-import requests
 import time
 
 from application_utils import check_servers_health, post_startup_actions
@@ -40,3 +39,6 @@ if check_servers_health(ips, port):
     post_startup_actions(ips, port)
     # set max_workers
     print(f"Our EC2 instances are ready :-)")
+
+
+# botocore.exceptions.ClientError: An error occurred (UnauthorizedOperation) when calling the DescribeSecurityGroups operation: You are not authorized to perform this operation.
