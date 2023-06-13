@@ -14,8 +14,7 @@ class workerCreator:
         setup_file = 'worker_setup.sh'
         env_vars = {"MAIN_INSTANCE_IP": main_ip, "SECONDARY_INSTANCE_IP": secondary_ip}
         self._update_worker_setup_script(setup_file, env_vars)
-        instances = self.ec2_manager.create_ec2_instance(setup_file=setup_file)
-        instance = instances[0]  # Accessing the first instance in the list
+        instance = self.ec2_manager.create_ec2_instance(setup_file=setup_file)
         print("New worker instance has been created, waiting for it to be ready")
         instance.wait_until_running()
         print("Worker is ready!")

@@ -4,8 +4,8 @@ from application_utils import check_servers_health, post_startup_actions
 from ec2_manager import EC2Manager
 from role_policy_manager import IAMRoleManager
 
-role_name = 'EC2ManagementRole'
-policy_name = 'EC2ManagementPolicy'
+role_name = 'NewEC2ManagementRole'
+policy_name = 'NewEC2ManagementPolicy'
 
 iam_manager = IAMRoleManager(role_name, policy_name)
 iam_manager.create_role()
