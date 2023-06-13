@@ -48,7 +48,7 @@ class WorkerController:
         def read_health():
             return {"status": "ok"}
 
-        @self.app.post("/add_sibling/{other_node}")
+        @self.app.put("/add_sibling/{other_node}")
         async def add_sibling(other_node: str):
             return self.add_sibling(other_node)
 
