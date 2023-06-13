@@ -35,7 +35,7 @@ def post_startup_actions(ips: List[str], port: str):
         request_template = lambda ip_to, ip1_about: f"http://{ip_to}:{port}/add_sibling/{ip1_about}"
         requests.put(request_template(ips[0], ips[1]))
         requests.put(request_template(ips[1], ips[0]))
-        requests.put(f"http://{ips[0]}:{port}/max_workers/3")
-        requests.put(f"http://{ips[1]}:{port}/max_workers/2")
+        requests.post(f"http://{ips[0]}:{port}/set_max_workers/3")
+        requests.post(f"http://{ips[1]}:{port}/set_max_workers/2")
     except Exception as ex:
         print("Caught exception {}".format(ex))

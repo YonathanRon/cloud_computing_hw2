@@ -14,10 +14,12 @@ POLICY_DOCUMENT = json.dumps({
                 "ec2:StartInstances",
                 "ec2:StopInstances",
                 "ec2:RunInstances",
-                "ec2:DescribeSecurityGroups",  # Added permission for describing security groups
-                "ec2:CreateSecurityGroup",  # Added permission for creating security groups
-                "ec2:AuthorizeSecurityGroupIngress",  # Added permission for authorizing ingress rules
-                "ec2:RevokeSecurityGroupIngress"  # Added permission for revoking ingress rules
+                "ec2:DescribeKeyPairs",
+                "ec2:DescribeKeyPair",
+                "ec2:DescribeSecurityGroups",
+                "ec2:CreateSecurityGroup",
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:RevokeSecurityGroupIngress"
             ],
             "Resource": "*"
         }
@@ -60,6 +62,7 @@ class IAMRoleManager:
                         AssumeRolePolicyDocument=self.policy_document,
                         Description='Role to allow EC2 instances to manage other EC2 instances'
                     )
+                    time.sleep(20)
                     print(f'Created role {self.role_name} response is  {create_role_response}')
                 except ClientError as e:
                     print("Unexpected error: %s" % e)
@@ -80,6 +83,7 @@ class IAMRoleManager:
                         PolicyName=self.policy_name,
                         PolicyDocument=POLICY_DOCUMENT
                     )
+                    time.sleep(20)
                     print(f'Created policy {self.policy_name} response is {create_policy_response} ')
                 except ClientError as e:
                     print("Unexpected error: %s" % e)
@@ -93,12 +97,13 @@ class IAMRoleManager:
                 RoleName=self.role_name,
                 PolicyArn=f'arn:aws:iam::{self.iam.get_user()["User"]["Arn"].split(":")[4]}:policy/{self.policy_name}'
             )
+            time.sleep(15)
             print(f'Attached policy {self.policy_name} to role {self.role_name}  response is {attach_role_policy_response}')
         except ClientError as e:
             print("Unexpected error: %s" % e)
 
     def get_or_create_instance_profile(self):
-        instance_profile_name = self.role_name + "InstanceProfile"
+        instance_profile_name = self.role_name + "MyInstanceProfile"
         try:
             self.iam.get_instance_profile(InstanceProfileName=instance_profile_name)
         except self.iam.exceptions.NoSuchEntityException:
@@ -107,4 +112,5 @@ class IAMRoleManager:
             # Add the role to the instance profile
             self.iam.add_role_to_instance_profile(InstanceProfileName=instance_profile_name, RoleName=self.role_name)
             time.sleep(10) # Give AWS some time to propagate the changes
+            print(f"get intance profile for name {instance_profile_name}, response is {self.iam.get_instance_profile(InstanceProfileName=instance_profile_name)}")
         return instance_profile_name
