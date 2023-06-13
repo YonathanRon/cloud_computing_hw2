@@ -137,3 +137,10 @@ class EC2Manager:
         instance.wait_until_running()
         instance.reload()
         return instance.public_ip_address
+
+    def terminate_ec2_instance(self, instance_id):
+        try:
+            response = self.ec2_client.terminate_instances(InstanceIds=[instance_id])
+            return response
+        except Exception as ex:
+            print(f"Oh, failed {ex}")

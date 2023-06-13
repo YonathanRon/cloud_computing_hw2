@@ -7,6 +7,12 @@ from datetime import datetime, timedelta
 import time
 from fastapi import status
 
+def get_instance_id():
+    url = 'http://169.254.169.254/latest/meta-data/instance-id'
+    response = requests.get(url)
+    instance_id = response.text
+    return instance_id
+
 
 class Worker:
     SLEEP_TIME = 3
@@ -14,8 +20,11 @@ class Worker:
     SERVER_PORT = 8001
 
     def __init__(self):
-        self.main_controller_node = str(os.environ.get("MAIN_INSTANCE_IP"))
-        self.second_controller_node = str(os.environ.get("SECONDARY_INSTANCE_IP"))
+        try:
+            self.main_controller_node = str(os.environ.get("MAIN_INSTANCE_IP", ""))
+            self.second_controller_node = str(os.environ.get("MAIN_INSTANCE_IP", ""))
+        except Exception as ex:
+            print(f"Failed to init nodes ips {ex}")
 
     def start(self):
         last_task_time = datetime.now()
@@ -39,7 +48,7 @@ class Worker:
 
     def add_completed_work(self, node: str, work_id: str, result: str):
         try:
-            url = f"http://{node}/add_complteted_work"
+            url = f"http://{node}:{self.SERVER_PORT}/add_completed_work"
             data = {
                 'work_id': work_id,
                 'result': result
@@ -51,20 +60,20 @@ class Worker:
             print(f"Failed to retrieve task from {node}. {e}")
         return None
 
-    def get_task_nodes(self, ):
+    def get_task_nodes(self):
         nodes = [self.main_controller_node]
-        if len(self.second_controller_node) > 0:
+        if self.second_controller_node :
             nodes.append(self.second_controller_node)
 
         return nodes
 
     def get_task(self, node):
         try:
-            response = requests.get(f"http://{node}/get_task", timeout=5)
+            response = requests.get(f"http://{node}:{self.SERVER_PORT}/get_task", timeout=5)
             if response.status_code == 200:
                 return response.json()
         except Exception as e:
-            print(f"Failed to retrieve task from {node}. error: {e}")
+            print(f"Failed to retrieve task from {node}:{self.SERVER_PORT}. error: {e}")
         return None
 
     def do_work(self, buffer: str, iterations: int):
@@ -76,14 +85,15 @@ class Worker:
 
     def terminated(self):
         # Notify the nodes about termination
-        requests.post(f"http://{self.main_controller_node}/worker_down")
-
-        # Terminate the EC2 instances
-        ec2 = boto3.client("ec2", region_name="your_region")
-        instance_ids = ["instance_id_1", "instance_id_2", ...]  # Replace with your instance IDs
-        ec2.terminate_instances(InstanceIds=instance_ids)
-
+        data = {
+            'instance_id': get_instance_id()
+        }
+        try:
+            requests.post(f"http://{self.main_controller_node}:{self.SERVER_PORT}/worker_down", json=data)
+        except Exception as ex:
+            print(f"Oh, we failed {ex}")
 
 if __name__ == "__main__":
     worker = Worker()
     worker.start()
+
