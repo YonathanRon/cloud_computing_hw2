@@ -4,7 +4,7 @@ from typing import List
 from ec2_manager import EC2Manager
 
 
-class workerCreator:
+class WorkerCreator:
     DEFAULT_REGION = 'eu-west-1'
 
     def __init__(self):
@@ -12,7 +12,7 @@ class workerCreator:
 
     def start_new_worker(self, main_ip, secondary_ip):
         setup_file = 'worker_setup.sh'
-        self._update_worker_setup_script(setup_file, main_ip, secondary_ip)
+        self._update_worker_setup_script(main_ip, secondary_ip)
         instance = self.ec2_manager.create_ec2_instance(setup_file=setup_file)
         print("New worker instance has been created, waiting for it to be ready")
         instance.wait_until_running()
@@ -23,14 +23,14 @@ class workerCreator:
         print(f"Going to terminate instance {instance_id}")
         self.ec2_manager.terminate_ec2_instance(instance_id)
 
-    def _update_worker_setup_script(self,script_path, main_ip, secondary_ip):
+    def _update_worker_setup_script(self,  main_ip, secondary_ip):
         bash_content = f'''
         #!/bin/bash
         export MAIN_INSTANCE_IP="{main_ip}"
         export SECONDARY_INSTANCE_IP="{secondary_ip}"
         '''
 
-        with open(script_path, 'w') as file:
+        with open("nodes_ips.sh", 'w') as file:
             file.write(bash_content)
             file.flush()
 

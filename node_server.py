@@ -30,7 +30,7 @@ class WorkerController:
         self.my_ip = get_public_ip()
         self.other_node_ip = ""
         self.app = FastAPI()
-        self.worker_creator = workerCreator()
+        self.worker_creator = WorkerCreator()
 
         @self.app.get("/")
         def read_root():
