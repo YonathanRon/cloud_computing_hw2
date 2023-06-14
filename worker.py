@@ -22,7 +22,7 @@ class Worker:
     def __init__(self):
         try:
             self.main_controller_node = str(os.environ.get("MAIN_INSTANCE_IP", ""))
-            self.second_controller_node = str(os.environ.get("MAIN_INSTANCE_IP", ""))
+            self.second_controller_node = str(os.environ.get("SECONDARY_INSTANCE_IP", ""))
         except Exception as ex:
             print(f"Failed to init nodes ips {ex}")
 
