@@ -6,7 +6,7 @@ from role_policy_manager import IAMRoleManager
 
 role_name = 'NewEC2ManagementRole'
 policy_name = 'NewEC2ManagementPolicy'
-
+node_script_name = 'node_server_setup.sh'
 iam_manager = IAMRoleManager(role_name, policy_name)
 iam_manager.create_role()
 iam_manager.create_policy()
@@ -15,12 +15,12 @@ iam_manager.attach_policy_to_role()
 manager = EC2Manager(role_name=iam_manager.get_or_create_instance_profile())
 
 print("Creating instance 1.. ")
-instance1 = manager.create_ec2_instance(setup_file='node_server_setup.sh')
+instance1 = manager.create_ec2_instance(setup_file=node_script_name)
 manager.adjust_security_inbound()
 ip1 = manager.get_public_ip(instance1)
 
 print("Creating instance 2..")
-instance2 = manager.create_ec2_instance(setup_file='node_server_setup.sh')
+instance2 = manager.create_ec2_instance(setup_file=node_script_name)
 manager.adjust_security_inbound()
 ip2 = manager.get_public_ip(instance2)
 

@@ -12,8 +12,7 @@ class workerCreator:
 
     def start_new_worker(self, main_ip, secondary_ip):
         setup_file = 'worker_setup.sh'
-        env_vars = {"MAIN_INSTANCE_IP": main_ip, "SECONDARY_INSTANCE_IP": secondary_ip}
-        self._update_worker_setup_script(setup_file, env_vars)
+        self._update_worker_setup_script(setup_file, main_ip, secondary_ip)
         instance = self.ec2_manager.create_ec2_instance(setup_file=setup_file)
         print("New worker instance has been created, waiting for it to be ready")
         instance.wait_until_running()
@@ -24,20 +23,15 @@ class workerCreator:
         print(f"Going to terminate instance {instance_id}")
         self.ec2_manager.terminate_ec2_instance(instance_id)
 
-    def _update_worker_setup_script(self, setup_script, env_variables):
-        build_setup_file_path = setup_script
-        # Read the existing build setup file
-        with open(build_setup_file_path, 'r') as file:
-            build_setup_content = file.read()
+    def _update_worker_setup_script(self,script_path, main_ip, secondary_ip):
+        bash_content = f'''
+        #!/bin/bash
+        export MAIN_INSTANCE_IP="{main_ip}"
+        export SECONDARY_INSTANCE_IP="{secondary_ip}"
+        '''
 
-        # Append environment variable assignments to the content
-        for variable, value in env_variables.items():
-            build_setup_content += f'\nexport {variable}={value}'
-
-        # Write the updated content back to the build setup file
-        with open(build_setup_file_path, 'w') as file:
-            file.write(build_setup_content)
+        with open(script_path, 'w') as file:
+            file.write(bash_content)
             file.flush()
 
-        for variable, value in env_variables.items():
-            os.environ[variable] = value
+        print('Bash file updated successfully.')
