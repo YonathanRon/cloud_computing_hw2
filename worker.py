@@ -85,11 +85,8 @@ class Worker:
 
     def terminated(self):
         # Notify the nodes about termination
-        data = {
-            'instance_id': get_instance_id()
-        }
         try:
-            requests.post(f"http://{self.main_controller_node}:{self.SERVER_PORT}/worker_down", json=data)
+            requests.post(f"http://{self.main_controller_node}:{self.SERVER_PORT}/worker_down/{get_instance_id()}")
         except Exception as ex:
             print(f"Oh, we failed {ex}")
 
