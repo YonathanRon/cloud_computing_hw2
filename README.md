@@ -92,7 +92,7 @@ Auto-scaling in this context is essentially creating more worker instances when 
 while also ensuring the count of workers does not exceed a specified maximum limit. 
 If that limit is reached, it can potentially be increased by borrowing a worker quota from another node, providing an additional layer of flexibility and scalability to the system.
 
-In the case where a worker is terminated (worker_down endpoint), 
+In the case where a worker is idle for 20 minutes, worker_down request is send to the main ip server (means to the server that created it by its id), 
 the corresponding worker is removed from the active_workers list, 
 allowing new workers to be created when needed.
 
