@@ -1,5 +1,3 @@
-#### cloud_computing_hw2
-
 # Project Readme: Scalable Task Manager
 ### Overview
 This project presents a scalable task manager designed to balance and distribute tasks across a cluster of workers. It uses FastAPI to manage task distribution, completion status, and worker scaling based on demand. The application utilizes two identical servers on separate AWS EC2 instances.
@@ -25,7 +23,7 @@ Also, the maximum number of workers that a server can manage is specified by the
 Ensure you have the necessary dependencies installed. If not, install them with:
 
 ```bash
-pip install -r requirements.txt
+./init_setup.sh
 ```
 Then, you can run the application with the command:
 
@@ -40,6 +38,8 @@ This script will do the following:
 4. Wait for the servers to be ready (sleeps for 2 minutes).
 5. Check the health of the servers.
 6. Perform post-startup actions (set max workers, etc.).
+
+
 When running the script, you'll see output like this:
 
 ```bash
@@ -54,8 +54,7 @@ Where xx.xx.xx.xx and yy.yy.yy.yy are the public IP addresses of your EC2 instan
 ```
 
 ## Important Note
-Please ensure that you have the necessary permissions to create and manage EC2 instances and IAM roles in your AWS account. Unauthorized errors usually occur when your IAM user doesn't have the necessary permissions. If you see an error like botocore.exceptions.ClientError: An error occurred (UnauthorizedOperation) when calling the DescribeSecurityGroups operation: You are not authorized to perform this operation, please check your IAM permissions.
-
+Please ensure that you have the necessary permissions to create and manage EC2 instances and IAM roles in your AWS account.
 
 ## NODES SERVERS - API Endpoints
 This application provides several API endpoints for managing tasks and workers. Below is the list of available endpoints:
