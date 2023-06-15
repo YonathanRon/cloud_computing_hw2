@@ -19,7 +19,8 @@ POLICY_DOCUMENT = json.dumps({
                 "ec2:DescribeSecurityGroups",
                 "ec2:CreateSecurityGroup",
                 "ec2:AuthorizeSecurityGroupIngress",
-                "ec2:RevokeSecurityGroupIngress"
+                "ec2:RevokeSecurityGroupIngress",
+                "ec2:TerminateInstances"
             ],
             "Resource": "*"
         }
