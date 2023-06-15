@@ -1,4 +1,6 @@
 #!/bin/bash
+
+
 # Clone your application from Git
 cd /home/ubuntu
 git clone https://github.com/YonathanRon/cloud_computing_hw2.git
@@ -20,7 +22,8 @@ pip3 install boto3
 ## Change to your application directory
 cd cloud_computing_hw2
 #
-source nodes_ips.sh
+export MAIN_INSTANCE_IP="{main_ip}"
+export SECONDARY_INSTANCE_IP="{secondary_ip}"
 
 ## Start the FastAPI server
 python3 worker.py

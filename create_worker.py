@@ -1,4 +1,5 @@
 import os
+import re
 from typing import List
 
 from ec2_manager import EC2Manager
@@ -15,7 +16,7 @@ class WorkerCreator:
         self._update_worker_setup_script(main_ip, secondary_ip)
         instance = self.ec2_manager.create_ec2_instance(setup_file=setup_file)
         print("New worker instance has been created, waiting for it to be ready")
-        instance.wait_until_running()
+        # instance.wait_until_running()
         print("Worker is ready!")
         return instance.id
 
@@ -24,14 +25,22 @@ class WorkerCreator:
         self.ec2_manager.terminate_ec2_instance(instance_id)
 
     def _update_worker_setup_script(self,  main_ip, secondary_ip):
-        bash_content = f'''
-        #!/bin/bash
-        export MAIN_INSTANCE_IP="{main_ip}"
-        export SECONDARY_INSTANCE_IP="{secondary_ip}"
-        '''
+        # Read the original script
+        setup_file = 'worker_setup.sh'
+        with open(setup_file, 'r') as file:
+            script = file.read()
 
-        with open("nodes_ips.sh", 'w') as file:
-            file.write(bash_content)
-            file.flush()
+        # Perform the replacements
+        script = re.sub(r'\{main_ip\}', main_ip, script)
+        script = re.sub(r'\{secondary_ip\}', secondary_ip, script)
+
+        # Write the new script to a new file
+        with open(setup_file, 'w') as file:
+            file.write(script)
 
         print('Bash file updated successfully.')
+
+#
+# if __name__ == '__main__':
+#     wc = WorkerCreator()
+#     wc._update_worker_setup_script('123', '1234')
