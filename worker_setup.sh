@@ -16,13 +16,12 @@ pip3 install requests
 pip3 install uvicorn
 pip3 install boto3
 
-source nodes_ips.sh
 
-#aws configure
-#
 ## Change to your application directory
 cd cloud_computing_hw2
 #
+source nodes_ips.sh
+
 ## Start the FastAPI server
 python3 worker.py
 
