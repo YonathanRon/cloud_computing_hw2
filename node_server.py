@@ -65,8 +65,8 @@ class WorkerController:
         async def try_get_node_quota():
             return self.try_get_node_quota()
 
-        @self.app.post("/add_complteted_work")
-        async def add_complteted_work(work_id: str = Body(...), result: str = Body(...)):
+        @self.app.post("/add_completed_work")
+        async def add_completed_work(work_id: str = Body(...), result: str = Body(...)):
             self.completed_work.put({'work_id': work_id, 'result': result})
 
         @self.app.get("/exists_completed_works")
