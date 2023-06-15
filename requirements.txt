@@ -1,0 +1,4 @@
+boto3==1.18.42
+fastapi==0.68.2
+uvicorn==0.15.0
+requests==2.26.0

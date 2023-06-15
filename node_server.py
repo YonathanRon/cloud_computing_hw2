@@ -10,7 +10,7 @@ import requests
 from create_worker import *
 
 from pip._internal.cli.cmdoptions import timeout
-
+SERVER_PORT = 8001
 from ec2_manager import EC2Manager
 def get_public_ip():
     url = "http://checkip.amazonaws.com"
@@ -197,8 +197,8 @@ class WorkerController:
     def try_approach_other_node(self, endpoint: str):
         try:
             if len(self.other_node_ip) > 0:
-                print(f"http://{self.other_node_ip}/{endpoint}")
-                response = requests.get(f"http://{self.other_node_ip}/{endpoint}", timeout=5)
+                print(f"http://{self.other_node_ip}:{SERVER_PORT}/{endpoint}")
+                response = requests.get(f"http://{self.other_node_ip}:{SERVER_PORT}/{endpoint}", timeout=5)
                 if response.status_code == 200:
                     return response.json()
         except Exception as e:
